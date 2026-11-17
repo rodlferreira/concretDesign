@@ -34,3 +34,17 @@ A auditoria completa das dependências de desenvolvimento mantém cinco entradas
 ### Dados necessários para ativar o SMTP
 
 Obter do fornecedor que aloja o email `@concretdesign.pt`: servidor SMTP (`SMTP_HOST`), porta (`SMTP_PORT`), tipo de ligação (465 com TLS direto: `SMTP_SECURE=true`; 587 com STARTTLS: `SMTP_SECURE=false`), utilizador completo (`SMTP_USER`), palavra-passe SMTP ou palavra-passe de aplicação (`SMTP_PASSWORD`) e endereço remetente autorizado (`SMTP_FROM`). Confirmar também quem recebe os pedidos (`QUOTE_EMAIL`, já definido como `geral@concretdesign.pt`). Configurar os valores sensíveis apenas no `.env` local do backend ou no gestor de segredos do alojamento, nunca no chat, frontend ou Git. Um fornecedor que exija apenas OAuth requer adaptação da autenticação atual.
+
+## Vercel — ambiente público de teste (16/11/2026)
+
+API: https://concretdesign-api.vercel.app/api/health. Frontend autorizado: https://concretdesign.vercel.app, que encaminha `/api/*` para esta API.
+
+No Vercel, `api/index.js` usa `src/blob-repository.js`, com objetos privados no store `concretdesign-quotes` em Paris (cdg1), cifragem AES-256-GCM e expiração automática de 90 dias. Não usa SQLite nem o disco temporário das funções. O servidor local mantém SQLite. Os pedidos são imutáveis por chave de idempotência; a gravação confirma antes de devolver sucesso.
+
+`DATA_ENCRYPTION_KEY`, `CRON_SECRET`, `ALLOWED_ORIGINS` e a ligação Blob foram configurados em produção. A cópia local dos segredos gerados está em `data/.vercel-secrets-backup`, privada e excluída do Git e do deploy. Preservar essa cópia num gestor de segredos; nunca a publicar. Não foram migrados dados pessoais locais.
+
+SMTP ainda não configurado: os pedidos ficam guardados, sem avisos por email. Quando forem adicionadas as variáveis SMTP, os avisos são tentados durante o envio e repetidos por cron diário às 08:00 UTC (limite do plano Hobby). A limitação de pedidos continua em memória por instância; volumes maiores requerem um limitador partilhado.
+
+Republicar com `npx vercel --prod` nesta pasta após `npm test`. O projeto foi ligado ao repositório existente; incluir a configuração e a adaptação Blob no próximo commit antes de usar deploys automáticos por push.
+
+Teste público realizado com dados fictícios, referência `d6d1ab64-3b4a-4547-8088-9f642e757b9c`; repetição devolveu a mesma referência. O objeto de teste permanece no armazenamento privado e expira automaticamente.

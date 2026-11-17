@@ -22,7 +22,7 @@ export function createNotifier(repository) {
       if (running) return;
       running = true;
       try {
-        for (const { id, data } of repository.pending()) {
+        for (const { id, data } of await repository.pending()) {
           const { email, ...fields } = data;
           await transport.sendMail({
             from: process.env.SMTP_FROM,
@@ -35,7 +35,7 @@ export function createNotifier(repository) {
                 .map(([key, value]) => `${key}: ${value}`)
                 .join("\n"),
           });
-          repository.markNotified(id);
+          await repository.markNotified(id);
         }
       } catch (error) {
         console.error("Quote notification failed:", error.code || error.name);

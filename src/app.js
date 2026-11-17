@@ -49,6 +49,7 @@ export function createApp({
   origins = ["http://127.0.0.1:5173", "http://localhost:5173"],
   limit = 5,
   trustedProxyIps = [],
+  onSaved = async () => {},
 } = {}) {
   if (!repository) throw new Error("Repository required");
   const app = express();
@@ -93,14 +94,15 @@ export function createApp({
       next();
     },
     express.json({ limit: "12kb" }),
-    (req, res, next) => {
+    async (req, res, next) => {
       const parsed = quoteSchema.safeParse(req.body);
       const requestKey = z.uuid().safeParse(req.get("Idempotency-Key"));
       if (!parsed.success || !requestKey.success)
         return res.status(400).json({ error: "invalid_request" });
       try {
         const { website, ...data } = parsed.data;
-        const id = repository.save(data, requestKey.data);
+        const id = await repository.save(data, requestKey.data);
+        await onSaved();
         res.status(201).json({ reference: id });
       } catch (error) {
         next(error);
